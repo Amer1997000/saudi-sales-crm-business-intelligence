@@ -1,0 +1,22 @@
+import { useState } from 'react'
+import './App.css'
+import type { CrmWorkspace } from './domain/models'
+import { initializeWorkspace, resetWorkspace } from './storage/workspaceStorage'
+import { saveWorkspace } from './storage/workspaceStorage'
+import { LeadsPage } from './components/LeadsPage'
+import { AccountsPage } from './components/AccountsPage'
+import { PipelinePage } from './components/PipelinePage'
+import { PlannerPage } from './components/PlannerPage'
+import { QuotationsPage } from './components/QuotationsPage'
+import { ForecastPage } from './components/ForecastPage'
+import { AnalyticsPage } from './components/AnalyticsPage'
+import { EnhancedOverview } from './components/EnhancedOverview'
+import { RecruiterDemo } from './components/RecruiterDemo'
+
+const modules = [['Executive Overview','overview'],['Lead Management','leads'],['Sales Pipeline','pipeline'],['Customer Accounts','accounts'],['Follow-up Planner','activities'],['Quotations','quotations'],['Revenue Forecasting','forecast'],['Sales Analytics','analytics']] as const
+type ModuleId=typeof modules[number][1]
+function Placeholder({title,id,workspace}:{title:string;id:ModuleId;workspace:CrmWorkspace}){const counts:Partial<Record<ModuleId,number>>={leads:workspace.leads.length,pipeline:workspace.opportunities.length,accounts:workspace.accounts.length,activities:workspace.activities.length,quotations:workspace.quotations.length};return <section className="placeholder"><p className="eyebrow">PHASE 1 FOUNDATION</p><span className="placeholder-icon">↗</span><h1>{title}</h1><p>The domain model and synthetic records are ready. Interactive workflows for this module are intentionally reserved for a later approved phase.</p>{counts[id]!==undefined&&<div className="record-count"><strong>{counts[id]}</strong><span>synthetic records available</span></div>}<div className="planned"><b>Planned capability</b><span>{id==='forecast'?'Period and representative forecasting with scenario controls':id==='analytics'?'Conversion, velocity and performance analysis':'Search, filtering, validated forms and auditable record updates'}</span></div></section>}
+function App(){const[active,setActive]=useState<ModuleId>('overview');const[workspace,setWorkspace]=useState(()=>initializeWorkspace(window.localStorage));const[resetPending,setResetPending]=useState(false);const title=modules.find(x=>x[1]===active)![0];const changeWorkspace=(next:CrmWorkspace)=>{saveWorkspace(window.localStorage,next);setWorkspace(next)};const doReset=()=>{setWorkspace(resetWorkspace(window.localStorage));setResetPending(false);setActive('overview')};const page=active==='overview'?<><EnhancedOverview workspace={workspace}/><RecruiterDemo onNavigate={setActive}/></>:active==='leads'?<LeadsPage workspace={workspace} onChange={changeWorkspace}/>:active==='accounts'?<AccountsPage workspace={workspace} onChange={changeWorkspace}/>:active==='pipeline'?<PipelinePage workspace={workspace} onChange={changeWorkspace}/>:active==='activities'?<PlannerPage workspace={workspace} onChange={changeWorkspace}/>:active==='quotations'?<QuotationsPage workspace={workspace} onChange={changeWorkspace}/>:active==='forecast'?<ForecastPage workspace={workspace}/>:active==='analytics'?<AnalyticsPage workspace={workspace}/>:<Placeholder title={title} id={active} workspace={workspace}/>;return <div className="app-shell"><aside className="sidebar"><div className="brand"><span>R</span><div><b>Riyadah</b><small>Business Solutions</small></div></div><nav aria-label="CRM modules">{modules.map(([label,id],index)=><button key={id} className={active===id?'active':''} aria-current={active===id?'page':undefined} onClick={()=>setActive(id)}><span>{String(index+1).padStart(2,'0')}</span>{label}</button>)}</nav><div className="sidebar-foot"><span className="status-dot"/>Browser-local demo</div></aside><main><header><div><small>SAUDI SALES CRM</small><b>{title}</b></div><button className={resetPending?'danger':'reset'} onClick={()=>resetPending?doReset():setResetPending(true)}>{resetPending?'Confirm reset':'Reset demo'}</button>{resetPending&&<button className="cancel" onClick={()=>setResetPending(false)}>Cancel</button>}</header><div className="disclosure"><b>Synthetic portfolio demonstration</b><span>All companies, contacts and transactions are fictional. Data stays in this browser's local storage and is not transmitted.</span></div><div className="content">{page}</div></main></div>}
+export default App
+
+
